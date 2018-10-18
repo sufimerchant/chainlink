@@ -27,8 +27,7 @@ export default {
       contrastText: '#BDE5F8'
     },
     background: {
-      default: common.white,
-      paper: grey[50],
+      default: '#f5f6f8',
       appBar: '#3c40c6'
     }
   },

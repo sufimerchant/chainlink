@@ -28,17 +28,18 @@ import { isFetchingSelector } from 'selectors'
 // Asynchronously load routes that are chunked via code-splitting
 // 'import' as a function must take a string. It can't take a variable.
 const uniOpts = {loading: Loading}
+const Dashboard = universal(import('./containers/Dashboard'), uniOpts)
+const Jobs = universal(import('./containers/Jobs'), uniOpts)
+const JobSpec = universal(import('./containers/JobSpec'), uniOpts)
+const CreateJobSpec = universal(import('./containers/CreateJobSpec'), uniOpts)
+const JobSpecRuns = universal(import('./containers/JobSpecRuns'), uniOpts)
+const JobSpecRun = universal(import('./containers/JobSpecRun'), uniOpts)
 const BridgesIndex = universal(import('./containers/Bridges/Index'), uniOpts)
 const BridgesNew = universal(import('./containers/Bridges/New'), uniOpts)
 const BridgesShow = universal(import('./containers/Bridges/Show'), uniOpts)
 const BridgesEdit = universal(import('./containers/Bridges/Edit'), uniOpts)
 const Configuration = universal(import('./containers/Configuration'), uniOpts)
-const CreateJobSpec = universal(import('./containers/CreateJobSpec'), uniOpts)
 const About = universal(import('./containers/About'), uniOpts)
-const Jobs = universal(import('./containers/Jobs'), uniOpts)
-const JobSpec = universal(import('./containers/JobSpec'), uniOpts)
-const JobSpecRuns = universal(import('./containers/JobSpecRuns'), uniOpts)
-const JobSpecRun = universal(import('./containers/JobSpecRun'), uniOpts)
 const SignIn = universal(import('./containers/SignIn'), uniOpts)
 const SignOut = universal(import('./containers/SignOut'), uniOpts)
 
@@ -125,7 +126,7 @@ class Layout extends Component {
           onClick={this.toggleDrawer}
         >
           <List className={classes.drawerList}>
-            <ListItem button component={Link} to='/' className={classes.menuitem}>
+            <ListItem button component={Link} to='/jobs' className={classes.menuitem}>
               <ListItemText primary='Jobs' />
             </ListItem>
             <ListItem button component={Link} to='/bridges' className={classes.menuitem}>
@@ -151,7 +152,7 @@ class Layout extends Component {
       <Typography variant='body1' component='div'>
         <List className={classes.horizontalNav}>
           <ListItem className={classes.horizontalNavItem}>
-            <Link to='/' className={classes.horizontalNavLink}>Jobs</Link>
+            <Link to='/jobs' className={classes.horizontalNavLink}>Jobs</Link>
           </ListItem>
           <ListItem className={classes.horizontalNavItem}>
             <Link to='/bridges' className={classes.horizontalNavLink}>Bridges</Link>
@@ -214,7 +215,8 @@ class Layout extends Component {
                   <Route exact path='/signin' component={SignIn} />
                   <PrivateRoute exact path='/signout' component={SignOut} />
                   {redirectTo && <Redirect to={redirectTo} />}
-                  <PrivateRoute exact path='/' component={Jobs} />
+                  <PrivateRoute exact path='/' component={Dashboard} />
+                  <PrivateRoute exact path='/jobs' component={Jobs} />
                   <PrivateRoute exact path='/job_specs/:jobSpecId' component={JobSpec} />
                   <PrivateRoute exact path='/job_specs/:jobSpecId/runs' component={JobSpecRuns} />
                   <PrivateRoute exact path='/job_specs/:jobSpecId/runs/page/:jobRunsPage' component={JobSpecRuns} />

@@ -4,6 +4,7 @@ import TableCell from '@material-ui/core/TableCell'
 import TableRow from '@material-ui/core/TableRow'
 import Typography from '@material-ui/core/Typography'
 import Link from 'components/Link'
+import TimeAgo from 'components/TimeAgo'
 
 const statusColor = (status) => {
   if (status === 'error') {
@@ -20,7 +21,9 @@ const JobRunsRow = ({id, jobSpecId, status, createdAt, result}) => (
       <Typography variant='body1' color={statusColor(status)}>{status}</Typography>
     </TableCell>
     <TableCell>
-      <Typography variant='body1'>{createdAt}</Typography>
+      <Typography variant='body1'>
+        <TimeAgo>{createdAt}</TimeAgo>
+      </Typography>
     </TableCell>
     <TableCell>
       <Typography variant='body1'>{JSON.stringify(result.data)}</Typography>

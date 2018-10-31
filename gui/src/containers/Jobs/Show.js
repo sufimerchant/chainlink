@@ -1,28 +1,29 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { connect } from 'react-redux'
 import Typography from '@material-ui/core/Typography'
 import Grid from '@material-ui/core/Grid'
-import Title from 'components/Title'
-import PaddedCard from 'components/PaddedCard'
-import PrettyJson from 'components/PrettyJson'
-import Breadcrumb from 'components/Breadcrumb'
-import BreadcrumbItem from 'components/BreadcrumbItem'
 import Card from '@material-ui/core/Card'
-import JobRunsList from 'components/JobRunsList'
+import { Divider, Button } from '@material-ui/core'
 import { isWebInitiator, formatInitiators } from 'utils/jobSpecInitiators'
 import jobSpecDefinition from 'utils/jobSpecDefinition'
-import Link from 'components/Link'
-import CopyJobSpec from 'components/CopyJobSpec'
 import matchRouteAndMapDispatchToProps from 'utils/matchRouteAndMapDispatchToProps'
 import { withStyles } from '@material-ui/core/styles'
-import { connect } from 'react-redux'
 import { fetchJobSpec, submitJobSpecRun } from 'actions'
 import jobSelector from 'selectors/job'
 import jobRunsSelector from 'selectors/jobRuns'
 import jobRunsCountSelector from 'selectors/jobRunsCount'
 import { LATEST_JOB_RUNS_COUNT } from 'connectors/redux/reducers/jobRuns'
-import { Divider, Button } from '@material-ui/core'
+import JobRunsList from 'components/JobRunsList'
+import Link from 'components/Link'
+import CopyJobSpec from 'components/CopyJobSpec'
+import Title from 'components/Title'
+import PaddedCard from 'components/PaddedCard'
+import PrettyJson from 'components/PrettyJson'
+import Breadcrumb from 'components/Breadcrumb'
+import BreadcrumbItem from 'components/BreadcrumbItem'
 import ReactStaticLinkComponent from 'components/ReactStaticLinkComponent'
+import TimeAgo from 'components/TimeAgo'
 
 const styles = theme => ({
   actions: {
@@ -109,7 +110,7 @@ const renderJobSpec = ({ classes, jobSpec, jobRunsCount, submitJobSpecRun, fetch
             <Grid item xs={12}>
               <Typography variant='subheading' color='textSecondary'>Created</Typography>
               <Typography variant='body1' color='inherit'>
-                {jobSpec.createdAt}
+                <TimeAgo>{jobSpec.createdAt}</TimeAgo>
               </Typography>
             </Grid>
             <Grid item xs={12}>

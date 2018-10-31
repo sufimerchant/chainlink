@@ -1,7 +1,9 @@
 import * as api from 'api'
 import { AuthenticationError } from 'errors'
 import { pascalCase } from 'change-case'
+import transformJob from 'actions/transforms/job'
 import transformJobs from 'actions/transforms/jobs'
+import transformJobRuns from 'actions/transforms/jobRuns'
 
 const createAction = type => ({type: type})
 
@@ -91,10 +93,7 @@ export const RECEIVE_JOB_SPEC_ERROR = 'RECEIVE_JOB_SPEC_ERROR'
 
 fetchActions.jobSpec = {
   requestActionType: REQUEST_JOB_SPEC,
-  receiveSuccess: json => ({
-    type: RECEIVE_JOB_SPEC_SUCCESS,
-    item: json.data.attributes
-  }),
+  receiveSuccess: json => transformJob(RECEIVE_JOB_SPEC_SUCCESS, json),
   receiveErrorType: RECEIVE_JOB_SPEC_ERROR
 }
 
@@ -104,11 +103,12 @@ export const RECEIVE_JOB_SPEC_RUNS_ERROR = 'RECEIVE_JOB_SPEC_RUNS_ERROR'
 
 fetchActions.jobSpecRuns = {
   requestActionType: REQUEST_JOB_SPEC_RUNS,
-  receiveSuccess: json => ({
-    type: RECEIVE_JOB_SPEC_RUNS_SUCCESS,
-    items: json.data.map(j => j.attributes),
-    runsCount: json.meta.count
-  }),
+  // receiveSuccess: json => ({
+  //   type: RECEIVE_JOB_SPEC_RUNS_SUCCESS,
+  //   items: json.data.map(j => j.attributes),
+  //   runsCount: json.meta.count
+  // }),
+  receiveSuccess: json => transformJobRuns(RECEIVE_JOB_SPEC_RUNS_SUCCESS, json),
   receiveErrorType: RECEIVE_JOB_SPEC_RUNS_ERROR
 }
 

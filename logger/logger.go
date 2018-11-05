@@ -56,13 +56,16 @@ func SetLogger(zl *zap.Logger) {
 
 // CreateProductionLogger returns a log config for the passed directory
 // with the given LogLevel and customizes stdout for pretty printing.
-func CreateProductionLogger(dir string, jsonStdout bool, lvl zapcore.Level) *zap.Logger {
+func CreateProductionLogger(
+	dir string, jsonStdout bool, lvl zapcore.Level, toDisk bool) *zap.Logger {
 	config := zap.NewProductionConfig()
-	destination := path.Join(dir, "log.jsonl")
-	if !jsonStdout {
-		config.OutputPaths = []string{"pretty", destination}
+	if toDisk {
+		destination := path.Join(dir, "log.jsonl")
+		if !jsonStdout {
+			config.OutputPaths = []string{"pretty", destination}
+		}
+		config.ErrorOutputPaths = []string{"stderr", destination}
 	}
-	config.ErrorOutputPaths = []string{"stderr", destination}
 	config.Level.SetLevel(lvl)
 
 	zl, err := config.Build(zap.AddCallerSkip(1))

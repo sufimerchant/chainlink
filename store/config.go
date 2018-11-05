@@ -43,6 +43,7 @@ type Config struct {
 	JSONStdout               bool            `env:"JSON_STDOUT" envDefault:"false"`
 	LinkContractAddress      string          `env:"LINK_CONTRACT_ADDRESS" envDefault:"0x514910771AF9Ca656af840dff83E8264EcF986CA"`
 	LogLevel                 LogLevel        `env:"LOG_LEVEL" envDefault:"info"`
+	LogToDisk                bool            `env:"LOG_TO_DISK" envDefault:"true"`
 	MinIncomingConfirmations uint64          `env:"MIN_INCOMING_CONFIRMATIONS" envDefault:"0"`
 	MinOutgoingConfirmations uint64          `env:"MIN_OUTGOING_CONFIRMATIONS" envDefault:"12"`
 	MinimumContractPayment   assets.Link     `env:"MINIMUM_CONTRACT_PAYMENT" envDefault:"1000000000000000000"`
@@ -103,10 +104,13 @@ func (c Config) CertFile() string {
 	return c.TLSCertPath
 }
 
-// CreateProductionLogger returns a custom logger for the config's root directory
-// and LogLevel, with pretty printing for stdout.
+// CreateProductionLogger returns a custom logger for the config's root
+// directory and LogLevel, with pretty printing for stdout. If LOG_TO_DISK is
+// false, the logger will only log to stdout.
 func (c Config) CreateProductionLogger() *zap.Logger {
-	return logger.CreateProductionLogger(c.RootDir, c.JSONStdout, c.LogLevel.Level)
+	fmt.Println("************************************************************************ log?", c.LogToDisk)
+	return logger.CreateProductionLogger(
+		c.RootDir, c.JSONStdout, c.LogLevel.Level, c.LogToDisk)
 }
 
 // SessionSecret returns a sequence of bytes to be used as a private key for

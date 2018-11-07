@@ -1,6 +1,7 @@
 import reducer from 'connectors/redux/reducers'
 import {
   UPSERT_JOB_RUNS,
+  UPSERT_RECENT_JOB_RUNS,
   UPSERT_JOB_RUN,
   UPSERT_JOB
 } from 'connectors/redux/reducers/jobRuns'
@@ -42,6 +43,20 @@ describe('connectors/reducers/jobRuns', () => {
     })
     expect(state.jobRuns.currentPage).toEqual(['b', 'a'])
     expect(state.jobRuns.currentJobRunsCount).toEqual(10)
+  })
+
+  it('UPSERT_RECENT_JOB_RUNS upserts items', () => {
+    const action = {
+      type: UPSERT_RECENT_JOB_RUNS,
+      data: {
+        runs: {a: {id: 'a'}}
+      }
+    }
+    const state = reducer(undefined, action)
+
+    expect(state.jobRuns.items).toEqual({
+      'a': {id: 'a'}
+    })
   })
 
   it('UPSERT_JOB_RUN upserts items', () => {

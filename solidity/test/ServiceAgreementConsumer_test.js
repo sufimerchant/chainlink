@@ -6,6 +6,7 @@ import {
   defaultAccount,
   deploy,
   eth,
+  executeServiceAgreementBytes,
   functionSelector,
   getLatestEvent,
   hexToInt,
@@ -18,24 +19,25 @@ import {
   increaseTime5Minutes
 } from './support/helpers';
 
-contract('BasicConsumer', () => {
-  const sourcePath = 'examples/BasicConsumer.sol';
+contract('ServiceAgreementConsumer', () => {
+  const sourcePath = 'examples/ServiceAgreementConsumer.sol';
   let specId = newHash('0x4c7b7ffb66b344fbaa64995af81e355a');
   let currency = 'USD';
-  let link, oc, cc;
-  ;
+  let link, coord, cc;
+
   beforeEach(async () => {
-    link = await deploy('LinkToken.sol')
-    oc = await deploy('Oracle.sol', link.address);
-    await oc.transferOwnership(oracleNode, {from: defaultAccount});
-    cc = await deploy(sourcePath, link.address, oc.address, toHex(specId));
+    link = await deploy('LinkToken.sol');
+    coord = await deploy('Coordinator.sol', link.address);
+    await coord.transferOwnership(oracleNode, {from: defaultAccount});
+    cc = await deploy(sourcePath, link.address, coord.address, toHex(specId));
   });
 
-  it('has a predictable gas price', async () => {
-    const rec = await eth.getTransactionReceipt(cc.transactionHash)
+  it('gas price of contract deployment is predictable', async () => {
+    const rec = await eth.getTransactionReceipt(cc.transactionHash);
     assert.isBelow(rec.gasUsed, 1700000);
   });
-  describe('#requestEthereumPrice', () => {
+
+  describe('#requestEthereumPrice works', () => {
     context('without LINK', () => {
       it('reverts', async () => {
         await assertActionThrows(async () => {
@@ -43,17 +45,17 @@ contract('BasicConsumer', () => {
         });
       });
     });
-    ;
+
     context('with LINK', () => {
       beforeEach(async () => {
         await link.transfer(cc.address, web3.toWei('1', 'ether'));
       });
 
-      it('triggers a log event in the Oracle contract', async () => {
+      it('triggers a log event in the Coordinator contract', async () => {
         let tx = await cc.requestEthereumPrice(currency);
         let log = tx.receipt.logs[3];
-        assert.equal(log.address, oc.address);
-
+        assert.equal(log.address, coord.address);
+        ;
         let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log);
         let params = await cbor.decodeFirst(cborData);
         let expected = {
@@ -61,16 +63,16 @@ contract('BasicConsumer', () => {
           'url': 'https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD,EUR,JPY'
         };
 
-        assert.equal(toHex(specId), jId);
-        assert.equal(web3.toWei('1', 'ether'), hexToInt(wei));
-        assert.equal(cc.address.slice(2), requester.slice(26));
-        assert.equal(1, ver);
-        assert.deepEqual(expected, params);
+        assert.equal(toHex(specId), jId)
+        assert.equal(web3.toWei('1', 'ether'), hexToInt(wei))
+        assert.equal(cc.address.slice(2), requester.slice(26))
+        assert.equal(1, ver)
+        assert.deepEqual(expected, params)
       });
 
       it('has a reasonable gas cost', async () => {
         let tx = await cc.requestEthereumPrice(currency);
-        assert.isBelow(tx.receipt.gasUsed, 167500);
+        assert.isBelow(tx.receipt.gasUsed, 167900);
       });
     });
   });
@@ -82,19 +84,19 @@ contract('BasicConsumer', () => {
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei('1', 'ether'));
       await cc.requestEthereumPrice(currency);
-      let event = await getLatestEvent(oc);
+      let event = await getLatestEvent(coord);
       internalId = event.args.internalId;
     });
 
     it('records the data given to it by the oracle', async () => {
-      await oc.fulfillData(internalId, response, {from: oracleNode});
+      await coord.fulfillData(internalId, response, {from: oracleNode});
 
       let currentPrice = await cc.currentPrice.call();
       assert.equal(web3.toUtf8(currentPrice), response);
     });
 
     it('logs the data given to it by the oracle', async () => {
-      let tx = await oc.fulfillData(internalId, response, {from: oracleNode});
+      let tx = await coord.fulfillData(internalId, response, {from: oracleNode});
       assert.equal(2, tx.receipt.logs.length);
       let log = tx.receipt.logs[0];
 
@@ -106,14 +108,14 @@ contract('BasicConsumer', () => {
 
       beforeEach(async () => {
         let funcSig = functionSelector('fulfill(bytes32,bytes32)');
-        let args = requestDataBytes(toHex(specId), cc.address, funcSig, 42, '');
-        await requestDataFrom(oc, link, 0, args);
-        let event = await getLatestEvent(oc);
+        let args = executeServiceAgreementBytes(toHex(specId), cc.address, funcSig, 42, '');
+        await requestDataFrom(coord, link, 0, args);
+        let event = await getLatestEvent(coord);
         otherId = event.args.internalId;
       });
 
       it('does not accept the data provided', async () => {
-        await oc.fulfillData(otherId, response, {from: oracleNode});
+        await coord.fulfillData(otherId, response, {from: oracleNode});
 
         let received = await cc.currentPrice.call();
         assert.equal(web3.toUtf8(received), '');
@@ -125,7 +127,6 @@ contract('BasicConsumer', () => {
         await assertActionThrows(async () => {
           await cc.fulfill(internalId, response, {from: oracleNode});
         });
-
         let received = await cc.currentPrice.call();
         assert.equal(web3.toUtf8(received), '');
       });
@@ -173,3 +174,4 @@ contract('BasicConsumer', () => {
     });
   });
 });
+

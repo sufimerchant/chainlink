@@ -64,7 +64,6 @@ func TestIntegration_HelloWorld(t *testing.T) {
 	eth.Context("app.Start()", func(eth *cltest.EthMock) {
 		eth.RegisterSubscription("newHeads", newHeads)
 		eth.Register("eth_getTransactionCount", `0x0100`) // TxManager.ActivateAccount()
-		eth.Register("eth_getBlockByNumber", models.BlockHeader{})
 	})
 	assert.NoError(t, app.Start())
 	eth.EventuallyAllCalled(t)
@@ -445,8 +444,11 @@ func TestIntegration_WeiWatchers(t *testing.T) {
 
 func TestIntegration_MultiplierInt256(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
+	eth := app.MockEthClient()
+	eth.Context("app.Start()", func(eth *cltest.EthMock) {
+	})
 	defer cleanup()
-	app.Start()
+	_ = app.Start()
 
 	j := cltest.FixtureCreateJobViaWeb(t, app, "../internal/fixtures/web/int256_job.json")
 	jr := cltest.CreateJobRunViaWeb(t, app, j, `{"value":"-10221.30"}`)
@@ -518,18 +520,43 @@ func TestIntegration_NonceManagement_firstRunWithExistingTXs(t *testing.T) {
 	createCompletedJobRun(200, uint64(0x0101))
 }
 
+// Create a ServiceAgreement, request execution on it, and verify that it's
+// executed.
 func TestIntegration_CreateServiceAgreement(t *testing.T) {
 	t.Parallel()
 	config, _ := cltest.NewConfigWithPrivateKey()
 	app, cleanup := cltest.NewApplicationWithConfigAndUnlockedAccount(config)
 	defer cleanup()
 
-	sa := cltest.FixtureCreateServiceAgreementViaWeb(t, app, "../internal/fixtures/web/hello_world_agreement.json")
+	eth := app.MockEthClient()
+	logs := make(chan store.Log, 1) // Mock ethereum log events are sent via `logs`
+	eth.Context("app.Start()", func(eth *cltest.EthMock) {
+		eth.RegisterSubscription("logs", logs)
+	})
+	_ = app.Start()
+	// Service agreement which has no tasks to perform
+	sa := cltest.FixtureCreateServiceAgreementViaWeb(t, app, "../internal/fixtures/web/noop_agreement.json")
+
 	assert.NotEqual(t, "", sa.ID)
-	cltest.FindJob(app.Store, sa.JobSpecID)
+	j := cltest.FindJob(app.Store, sa.JobSpecID)
 
 	assert.Equal(t, assets.NewLink(1000000000000000000), sa.Encumbrance.Payment)
 	assert.Equal(t, uint64(300), sa.Encumbrance.Expiration)
+
 	assert.Equal(t, time.Unix(1571523439, 0).UTC(), sa.Encumbrance.EndAt.Time)
 	assert.NotEqual(t, "", sa.ID)
+
+	// Request execution of the job associated with this ServiceAgreement
+	logs <- cltest.NewServiceAgreementExecutionEvent(
+		j.ID,
+		cltest.NewAddress(), // Emitter of this log
+		cltest.NewAddress(), // Requester of this log
+		1,                   // Height of block this log should appear to come from
+		`{}`)                // Log contents
+	// Wait for the job to be run
+	runs := cltest.WaitForRuns(t, j, app.Store, 1)
+	cltest.WaitForJobRunToComplete(t, app.Store, runs[0])
+
+	eth.EventuallyAllCalled(t)
+
 }

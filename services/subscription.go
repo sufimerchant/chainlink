@@ -34,6 +34,14 @@ const (
 // If updating this, be sure to update the truffle suite's "expected event signature" test.
 var RunLogTopic = mustHash("RunRequest(bytes32,address,uint256,uint256,uint256,bytes)")
 
+// ServiceAgreementExecutionLogTopic is the signature for the
+// Coordinator.RunRequest(...) events which Chainlink nodes watch for. See
+
+// https://github.com/smartcontractkit/chainlink/blob/master/solidity/contracts/Coordinator.sol#RunRequest
+// If updating this, be sure to update the truffle suite's "expected event
+// signature" test.
+var ServiceAgreementExecutionLogTopic = mustHash("ServiceAgreementExecution(bytes32,address,uint256,uint256,uint256,bytes)")
+
 // OracleFulfillmentFunctionID is the function id of the oracle fulfillment
 // method used by EthTx: bytes4(keccak256("fulfillData(uint256,bytes32)"))
 // Kept in sync with solidity/contracts/Oracle.sol
@@ -53,26 +61,45 @@ type JobSubscription struct {
 // StartJobSubscription is the constructor of JobSubscription that to starts
 // listening to and keeps track of event logs corresponding to a job.
 func StartJobSubscription(job models.JobSpec, head *models.IndexableBlockNumber, store *strpkg.Store) (JobSubscription, error) {
+	// Check each possible initiator type for matches, list the matches in
+	// initSubs, and subscribe the job to them. Record any errors during
+	// subscription in merr.
 	var merr error
 	var initSubs []Unsubscriber
 	for _, initr := range job.InitiatorsFor(models.InitiatorEthLog) {
 		sub, err := StartEthLogSubscription(initr, job, head, store)
-		merr = multierr.Append(merr, err)
 		if err == nil {
 			initSubs = append(initSubs, sub)
+		} else {
+			merr = multierr.Append(merr, err)
 		}
 	}
 
 	for _, initr := range job.InitiatorsFor(models.InitiatorRunLog) {
-		sub, err := StartRunLogSubscription(initr, job, head, store)
-		merr = multierr.Append(merr, err)
+		sub, err := StartRunLogSubscription(
+			initr, job, head, store, RunLogTopic, ReceiveRunLog)
 		if err == nil {
 			initSubs = append(initSubs, sub)
+		} else {
+			merr = multierr.Append(merr, err)
+		}
+	}
+
+	for _, initr := range job.InitiatorsFor(models.InitiatorServiceAgreementExecutionLog) {
+		sub, err := StartRunLogSubscription(
+			initr, job, head, store, ServiceAgreementExecutionLogTopic,
+			ReceiveRunLog)
+		if err == nil {
+			initSubs = append(initSubs, sub)
+		} else {
+			merr = multierr.Append(merr, err)
 		}
 	}
 
 	if len(initSubs) == 0 {
-		return JobSubscription{}, multierr.Append(merr, errors.New("Job must have a valid log initiator"))
+		return JobSubscription{}, multierr.Append(
+			merr, errors.New(
+				"unable to subscribe to any logs, check earlier errors in this message, and the initiator types"))
 	}
 
 	js := JobSubscription{Job: job, unsubscribers: initSubs}
@@ -149,24 +176,31 @@ func (sub InitiatorSubscription) dispatchLog(log strpkg.Log) {
 }
 
 // TopicFiltersForRunLog generates the two variations of RunLog IDs that could
-// possibly be entered. There is the ID, hex encoded and the ID zero padded.
-func TopicFiltersForRunLog(jobID string) [][]common.Hash {
+// possibly be entered on a RunLog or a ServiceAgreementExecutionLog. There is the ID,
+// hex encoded and the ID zero padded.
+func TopicFiltersForRunLog(logTopic common.Hash, jobID string) [][]common.Hash {
 	hexJobID := common.BytesToHash([]byte(jobID))
 	jobIDZeroPadded := common.BytesToHash(common.RightPadBytes(hexutil.MustDecode("0x"+jobID), utils.EVMWordByteLen))
 	// RunLogTopic AND (0xHEXJOBID OR 0xJOBID0padded)
-	return [][]common.Hash{{RunLogTopic}, {hexJobID, jobIDZeroPadded}}
+	return [][]common.Hash{{logTopic}, {hexJobID, jobIDZeroPadded}}
 }
 
-// StartRunLogSubscription starts an InitiatorSubscription tailored for use with RunLogs.
-func StartRunLogSubscription(initr models.Initiator, job models.JobSpec, head *models.IndexableBlockNumber, store *strpkg.Store) (Unsubscriber, error) {
-	filter := NewInitiatorFilterQuery(initr, head, TopicFiltersForRunLog(job.ID))
-	return NewInitiatorSubscription(initr, job, store, filter, receiveRunLog)
+// StartRunLogSubscription starts an InitiatorSubscription tailored for use with
+// RunLog's or ServiceAgreementExecutionLog's.
+func StartRunLogSubscription(initr models.Initiator,
+	job models.JobSpec,
+	head *models.IndexableBlockNumber,
+	store *strpkg.Store,
+	logTopic common.Hash,
+	receiver func(le InitiatorSubscriptionLogEvent)) (Unsubscriber, error) {
+	filter := NewInitiatorFilterQuery(initr, head, TopicFiltersForRunLog(logTopic, job.ID))
+	return NewInitiatorSubscription(initr, job, store, filter, receiver)
 }
 
 // StartEthLogSubscription starts an InitiatorSubscription tailored for use with EthLogs.
 func StartEthLogSubscription(initr models.Initiator, job models.JobSpec, head *models.IndexableBlockNumber, store *strpkg.Store) (Unsubscriber, error) {
 	filter := NewInitiatorFilterQuery(initr, head, nil)
-	return NewInitiatorSubscription(initr, job, store, filter, receiveEthLog)
+	return NewInitiatorSubscription(initr, job, store, filter, ReceiveEthLog)
 }
 
 func loggerLogListening(initr models.Initiator, blockNumber *big.Int) {
@@ -180,7 +214,7 @@ func loggerLogListening(initr models.Initiator, blockNumber *big.Int) {
 }
 
 // Parse the log and run the job specific to this initiator log event.
-func receiveRunLog(le InitiatorSubscriptionLogEvent) {
+func ReceiveRunLog(le InitiatorSubscriptionLogEvent) {
 	if !le.ValidateRunLog() {
 		return
 	}
@@ -196,7 +230,7 @@ func receiveRunLog(le InitiatorSubscriptionLogEvent) {
 }
 
 // Parse the log and run the job specific to this initiator log event.
-func receiveEthLog(le InitiatorSubscriptionLogEvent) {
+func ReceiveEthLog(le InitiatorSubscriptionLogEvent) {
 	le.ToDebug()
 	data, err := le.EthLogJSON()
 	if err != nil {
@@ -450,7 +484,8 @@ func decodeABIToJSON(data []byte) (models.JSON, error) {
 }
 
 func isRunLog(log strpkg.Log) bool {
-	return len(log.Topics) == 4 && log.Topics[0] == RunLogTopic
+	return len(log.Topics) == 4 && (log.Topics[0] == RunLogTopic ||
+		log.Topics[0] == ServiceAgreementExecutionLogTopic)
 }
 
 func jobIDFromHexEncodedTopic(log strpkg.Log) (string, error) {

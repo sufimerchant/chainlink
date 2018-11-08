@@ -149,7 +149,7 @@ func TestTopicFiltersForRunLog(t *testing.T) {
 	t.Parallel()
 
 	jobID := "4a1eb0e8df314cb894024a38991cff0f"
-	topics := services.TopicFiltersForRunLog(jobID)
+	topics := services.TopicFiltersForRunLog(services.RunLogTopic, jobID)
 
 	assert.Equal(t, 2, len(topics))
 	assert.Equal(
@@ -272,7 +272,9 @@ func TestStartRunLogSubscription_ValidateSenders(t *testing.T) {
 
 			js, initr := cltest.NewJobWithRunLogInitiator()
 			initr.Requesters = []common.Address{requester}
-			_, err := services.StartRunLogSubscription(initr, js, nil, app.Store)
+			_, err := services.StartRunLogSubscription(
+				initr, js, nil, app.Store, services.RunLogTopic,
+				services.ReceiveRunLog)
 			assert.NoError(t, err)
 
 			logs <- cltest.NewRunLog(js.ID, cltest.NewAddress(), test.requester, 1, `{}`)

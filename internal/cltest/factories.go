@@ -275,6 +275,28 @@ func NewRunLog(
 	}
 }
 
+// NewServiceAgreementExecutionEvent creates a log event for the given jobid,
+// address, block, and json
+func NewServiceAgreementExecutionEvent(
+	jobID string,
+	emitter common.Address,
+	requester common.Address,
+	blk int,
+	json string,
+) strpkg.Log {
+	return strpkg.Log{
+		Address:     emitter,
+		BlockNumber: uint64(blk),
+		Data:        StringToVersionedLogData("internalID", json),
+		Topics: []common.Hash{
+			services.ServiceAgreementExecutionLogTopic,
+			StringToHash(jobID),
+			requester.Hash(),
+			minimumContractPayment.ToHash(),
+		},
+	}
+}
+
 // StringToVersionedLogData encodes a string to the log data field.
 func StringToVersionedLogData(internalID, str string) []byte {
 	buf := bytes.NewBuffer(hexutil.MustDecode(StringToHash(internalID).Hex()))

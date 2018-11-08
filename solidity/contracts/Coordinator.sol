@@ -1,10 +1,14 @@
 pragma solidity ^0.4.24;
 
+import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./interfaces/LinkTokenInterface.sol";
 
 // Coordinator handles oracle service aggreements between one or more oracles.
-contract Coordinator {
+contract Coordinator is Ownable {
   using SafeMath for uint256;
+
+  LinkTokenInterface internal LINK;
 
   struct ServiceAgreement {
     uint256 payment;
@@ -22,16 +26,15 @@ contract Coordinator {
     uint64 cancelExpiration;
   }
 
-  address internal link;
   mapping(uint256 => Callback) private callbacks;
   mapping(bytes32 => ServiceAgreement) public serviceAgreements;
 
   constructor(address _link) public {
-    link = _link;
+    LINK = LinkTokenInterface(_link);
   }
 
   event RunRequest(
-    bytes32 indexed specId,
+    bytes32 indexed sAId,
     address indexed requester,
     uint256 indexed amount,
     uint256 internalId,
@@ -163,7 +166,7 @@ contract Coordinator {
   }
 
   modifier onlyLINK() {
-    require(msg.sender == link, "Must use LINK token");
+    require(msg.sender == address(LINK), "Must use LINK token"); 
     _;
   }
 
@@ -184,4 +187,51 @@ contract Coordinator {
     require(_amount >= serviceAgreements[_sAId].payment, "Below agreed payment");
     _;
   }
+
+  modifier hasInternalId(uint256 _internalId) {
+    require(callbacks[_internalId].addr != address(0), "Must have a valid internalId");
+    _;
+  }
+
+  function fulfillData(
+    uint256 _internalId,
+    bytes32 _data
+  )
+    public
+    onlyOwner
+    hasInternalId(_internalId)
+    returns (bool)
+  {
+    Callback memory callback = callbacks[_internalId];
+
+    // This is ensuring that ONLY THE FIRST oracle response will be processed
+    // properly, which we are assuming for now, for prototyping. Also, there is
+    // NO HANDLING of LINK transfers or bond recalculations, ATM. TODO: Leaving
+    // that to another story, i.e.
+    // https://www.pivotaltracker.com/story/show/159584617
+    delete callbacks[_internalId];
+
+    // All updates to the oracle's fulfillment should come before calling the
+    // callback(addr+functionId) as it is untrusted. See:
+    // https://solidity.readthedocs.io/en/develop/security-considerations.html#use-the-checks-effects-interactions-pattern
+    return callback.addr.call(callback.functionId, callback.externalId, _data); // solium-disable-line security/no-low-level-calls
+  }
+
+  event CancelRequest(
+    uint256 internalId
+  );
+
+  function cancel(bytes32 _externalId)
+    public
+  {
+    uint256 internalId = uint256(keccak256(abi.encodePacked(msg.sender, _externalId)));
+    Callback memory cb = callbacks[internalId];
+    require(msg.sender == cb.addr, "Must be called from requester");
+    require(cb.cancelExpiration <= now, "Request is not expired");
+    assert(LINK.balanceOf(address(this)) >= cb.amount); // Must have enough LINK
+    require(LINK.transfer(cb.addr, cb.amount), "Unable to transfer");
+    delete callbacks[internalId];
+    emit CancelRequest(internalId);
+  }
+
 }

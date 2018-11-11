@@ -3,7 +3,6 @@ import {
   assertActionThrows,
   consumer,
   decodeRunRequest,
-  defaultAccount,
   deploy,
   eth,
   executeServiceAgreementBytes,
@@ -12,11 +11,8 @@ import {
   hexToInt,
   newHash,
   oracleNode,
-  requestDataBytes,
   requestDataFrom,
-  stranger,
-  toHex,
-  increaseTime5Minutes
+  toHex
 } from './support/helpers'
 
 contract('ServiceAgreementConsumer', () => {
@@ -28,7 +24,6 @@ contract('ServiceAgreementConsumer', () => {
   beforeEach(async () => {
     link = await deploy('LinkToken.sol')
     coord = await deploy('Coordinator.sol', link.address)
-    await coord.transferOwnership(oracleNode, {from: defaultAccount})
     cc = await deploy(sourcePath, link.address, coord.address, toHex(specId))
   })
 
@@ -55,8 +50,8 @@ contract('ServiceAgreementConsumer', () => {
         let tx = await cc.requestEthereumPrice(currency)
         let log = tx.receipt.logs[3]
         assert.equal(log.address, coord.address)
-        
-        let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log)
+
+        let [jId, requester, wei, id, ver, cborData] = decodeRunRequest(log) // eslint-disable-line no-unused-vars
         let params = await cbor.decodeFirst(cborData)
         let expected = {
           'path': ['USD'],
@@ -89,14 +84,14 @@ contract('ServiceAgreementConsumer', () => {
     })
 
     it('records the data given to it by the oracle', async () => {
-      await coord.fulfillData(internalId, response, {from: oracleNode})
+      await coord.fulfillData(internalId, response, { from: oracleNode })
 
       let currentPrice = await cc.currentPrice.call()
       assert.equal(web3.toUtf8(currentPrice), response)
     })
 
     it('logs the data given to it by the oracle', async () => {
-      let tx = await coord.fulfillData(internalId, response, {from: oracleNode})
+      let tx = await coord.fulfillData(internalId, response, { from: oracleNode })
       assert.equal(2, tx.receipt.logs.length)
       let log = tx.receipt.logs[0]
 
@@ -115,7 +110,7 @@ contract('ServiceAgreementConsumer', () => {
       })
 
       it('does not accept the data provided', async () => {
-        await coord.fulfillData(otherId, response, {from: oracleNode})
+        await coord.fulfillData(otherId, response, { from: oracleNode })
 
         let received = await cc.currentPrice.call()
         assert.equal(web3.toUtf8(received), '')
@@ -125,35 +120,10 @@ contract('ServiceAgreementConsumer', () => {
     context('when called by anyone other than the oracle contract', () => {
       it('does not accept the data provided', async () => {
         await assertActionThrows(async () => {
-          await cc.fulfill(internalId, response, {from: oracleNode})
+          await cc.fulfill(internalId, response, { from: oracleNode })
         })
         let received = await cc.currentPrice.call()
         assert.equal(web3.toUtf8(received), '')
-      })
-    })
-  })
-
-  describe('#cancelRequest', () => {
-    let requestId
-
-    beforeEach(async () => {
-      await link.transfer(cc.address, web3.toWei('1', 'ether'))
-      await cc.requestEthereumPrice(currency)
-      requestId = (await getLatestEvent(cc)).args.id
-    })
-
-    context("before 5 minutes", () => {
-      it('cant cancel the request', async () => {
-        await assertActionThrows(async () => {
-          await cc.cancelRequest(requestId, {from: consumer})
-        })
-      })
-    })
-
-    context("after 5 minutes", () => {
-      it('can cancel the request', async () => {
-        await increaseTime5Minutes()
-        await cc.cancelRequest(requestId, {from: consumer})
       })
     })
   })
@@ -166,7 +136,7 @@ contract('ServiceAgreementConsumer', () => {
     })
 
     it('transfers LINK out of the contract', async () => {
-      await cc.withdrawLink({from: consumer})
+      await cc.withdrawLink({ from: consumer })
       const ccBalance = await link.balanceOf(cc.address)
       const consumerBalance = await link.balanceOf(consumer)
       assert.equal(ccBalance.toString(), '0')
@@ -174,4 +144,3 @@ contract('ServiceAgreementConsumer', () => {
     })
   })
 })
-

@@ -1,11 +1,10 @@
 pragma solidity ^0.4.24;
 
-import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./interfaces/LinkTokenInterface.sol";
 
 // Coordinator handles oracle service aggreements between one or more oracles.
-contract Coordinator is Ownable {
+contract Coordinator {
   using SafeMath for uint256;
 
   LinkTokenInterface internal LINK;
@@ -198,7 +197,6 @@ contract Coordinator is Ownable {
     bytes32 _data
   )
     public
-    onlyOwner
     hasInternalId(_internalId)
     returns (bool)
   {
@@ -216,22 +214,4 @@ contract Coordinator is Ownable {
     // https://solidity.readthedocs.io/en/develop/security-considerations.html#use-the-checks-effects-interactions-pattern
     return callback.addr.call(callback.functionId, callback.externalId, _data); // solium-disable-line security/no-low-level-calls
   }
-
-  event CancelRequest(
-    uint256 internalId
-  );
-
-  function cancel(bytes32 _externalId)
-    public
-  {
-    uint256 internalId = uint256(keccak256(abi.encodePacked(msg.sender, _externalId)));
-    Callback memory cb = callbacks[internalId];
-    require(msg.sender == cb.addr, "Must be called from requester");
-    require(cb.cancelExpiration <= now, "Request is not expired");
-    assert(LINK.balanceOf(address(this)) >= cb.amount); // Must have enough LINK
-    require(LINK.transfer(cb.addr, cb.amount), "Unable to transfer");
-    delete callbacks[internalId];
-    emit CancelRequest(internalId);
-  }
-
 }

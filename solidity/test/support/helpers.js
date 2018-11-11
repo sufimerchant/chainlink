@@ -147,7 +147,7 @@ export const decodeRunRequest = log => {
 }
 
 export const runRequestId = log => {
-  var [_, _, _, internalId, _, _] = decodeRunRequest(log)
+  var [_, _, _, internalId, _, _] = decodeRunRequest(log) // eslint-disable-line no-unused-vars, no-redeclare
   return internalId
 }
 
@@ -242,15 +242,15 @@ export const increaseTime5Minutes = async () => {
 
 export const calculateSAID =
   ({ payment, expiration, endAt, oracles, requestDigest }) => {
-  const serviceAgreementIDInput = concatTypedArrays(
-    payment,
-    expiration,
-    endAt,
-    concatTypedArrays(...(oracles.map(a => newHash(toHex(a))))),
-    requestDigest)
-  const serviceAgreementIDInputDigest = ethjsUtils.sha3(toHex(serviceAgreementIDInput))
-  return newHash(toHex(serviceAgreementIDInputDigest))
-}
+    const serviceAgreementIDInput = concatTypedArrays(
+      payment,
+      expiration,
+      endAt,
+      concatTypedArrays(...(oracles.map(a => newHash(toHex(a))))),
+      requestDigest)
+    const serviceAgreementIDInputDigest = ethjsUtils.sha3(toHex(serviceAgreementIDInput))
+    return newHash(toHex(serviceAgreementIDInputDigest))
+  }
 
 export const recoverPersonalSignature = (message, signature) => {
   const personalSignPrefix = newUint8ArrayFromStr('\x19Ethereum Signed Message:\n')
@@ -292,56 +292,56 @@ export const padNumTo256Bit = (n) => padHexTo256Bit(n.toString(16))
 
 export const initiateServiceAgreementArgs = ({
   payment, expiration, endAt, oracles, oracleSignature, requestDigest }) => [
-    toHex(payment),
-    toHex(expiration),
-    toHex(endAt),
-    oracles.map(toHex),
-    [oracleSignature.v],
-    [oracleSignature.r].map(toHex),
-    [oracleSignature.s].map(toHex),
-    toHex(requestDigest)
-  ]
+  toHex(payment),
+  toHex(expiration),
+  toHex(endAt),
+  oracles.map(toHex),
+  [oracleSignature.v],
+  [oracleSignature.r].map(toHex),
+  [oracleSignature.s].map(toHex),
+  toHex(requestDigest)
+]
 
 /** Call coordinator contract to initiate the specified service agreement, and
  * get the return value. */
 export const initiateServiceAgreementCall = async (coordinator, args) =>
-  await coordinator.initiateServiceAgreement.call(...initiateServiceAgreementArgs(args))
+  coordinator.initiateServiceAgreement.call(...initiateServiceAgreementArgs(args))
 
 /** Call coordinator contract to initiate the specified service agreement. */
 export const initiateServiceAgreement = async (coordinator, args) =>
-  await coordinator.initiateServiceAgreement(...initiateServiceAgreementArgs(args))
+  coordinator.initiateServiceAgreement(...initiateServiceAgreementArgs(args))
 
 /** Check that the given service agreement was stored at the correct location */
 export const checkServiceAgreementPresent =
       async (coordinator, serviceAgreementID,
-             { payment, expiration, endAt, requestDigest }) => {
-               const sa = await coordinator.serviceAgreements.call(
-                 toHex(serviceAgreementID))
-               assertBigNum(sa[0], bigNum(toHex(payment)))
-               assertBigNum(sa[1], bigNum(toHex(expiration)))
-               assertBigNum(sa[2], bigNum(toHex(endAt)))
-               assert.equal(sa[3], toHex(requestDigest))
+        { payment, expiration, endAt, requestDigest }) => {
+        const sa = await coordinator.serviceAgreements.call(
+          toHex(serviceAgreementID))
+        assertBigNum(sa[0], bigNum(toHex(payment)))
+        assertBigNum(sa[1], bigNum(toHex(expiration)))
+        assertBigNum(sa[2], bigNum(toHex(endAt)))
+        assert.equal(sa[3], toHex(requestDigest))
 
-               /// / TODO:
+        /// / TODO:
 
-               /// / Web3.js doesn't support generating an artifact for arrays
-               /// within a struct. / This means that we aren't returned the
-               /// list of oracles and / can't assert on their values.
-               /// /
+        /// / Web3.js doesn't support generating an artifact for arrays
+        /// within a struct. / This means that we aren't returned the
+        /// list of oracles and / can't assert on their values.
+        /// /
 
-               /// / However, we can pass them into the function to generate the
-               /// ID / & solidity won't compile unless we pass the correct
-               /// number and / type of params when initializing the
-               /// ServiceAgreement struct, / so we have some indirect test
-               /// coverage.
-               /// /
-               /// / https://github.com/ethereum/web3.js/issues/1241
-               /// / assert.equal(
-               /// /   sa[2],
-               /// /   ['0x70AEc4B9CFFA7b55C0711b82DD719049d615E21d',
-               /// /    '0xd26114cd6EE289AccF82350c8d8487fedB8A0C07']
-               /// / )
-             }
+        /// / However, we can pass them into the function to generate the
+        /// ID / & solidity won't compile unless we pass the correct
+        /// number and / type of params when initializing the
+        /// ServiceAgreement struct, / so we have some indirect test
+        /// coverage.
+        /// /
+        /// / https://github.com/ethereum/web3.js/issues/1241
+        /// / assert.equal(
+        /// /   sa[2],
+        /// /   ['0x70AEc4B9CFFA7b55C0711b82DD719049d615E21d',
+        /// /    '0xd26114cd6EE289AccF82350c8d8487fedB8A0C07']
+        /// / )
+      }
 
 /** Check that all values for the struct at this SAID have default
     values. I.e., nothing was changed due to invalid request */

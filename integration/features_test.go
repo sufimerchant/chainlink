@@ -520,8 +520,6 @@ func TestIntegration_NonceManagement_firstRunWithExistingTXs(t *testing.T) {
 	createCompletedJobRun(200, uint64(0x0101))
 }
 
-// Create a ServiceAgreement, request execution on it, and verify that it's
-// executed.
 func TestIntegration_CreateServiceAgreement(t *testing.T) {
 	t.Parallel()
 	config, _ := cltest.NewConfigWithPrivateKey()
@@ -534,7 +532,6 @@ func TestIntegration_CreateServiceAgreement(t *testing.T) {
 		eth.RegisterSubscription("logs", logs)
 	})
 	_ = app.Start()
-	// Service agreement which has no tasks to perform
 	sa := cltest.FixtureCreateServiceAgreementViaWeb(t, app, "../internal/fixtures/web/noop_agreement.json")
 
 	assert.NotEqual(t, "", sa.ID)
@@ -549,10 +546,10 @@ func TestIntegration_CreateServiceAgreement(t *testing.T) {
 	// Request execution of the job associated with this ServiceAgreement
 	logs <- cltest.NewServiceAgreementExecutionEvent(
 		j.ID,
-		cltest.NewAddress(), // Emitter of this log
-		cltest.NewAddress(), // Requester of this log
-		1,                   // Height of block this log should appear to come from
-		`{}`)                // Log contents
+		cltest.NewAddress(),
+		cltest.NewAddress(),
+		1,
+		`{}`)
 	// Wait for the job to be run
 	runs := cltest.WaitForRuns(t, j, app.Store, 1)
 	cltest.WaitForJobRunToComplete(t, app.Store, runs[0])

@@ -76,9 +76,6 @@ func scanInitiatorLogsStartSubscriptions(
 // tracks event logs corresponding to the specified job. Ignores any errors if
 // there is at least one successful subscription to an initiator log.
 func StartJobSubscription(job models.JobSpec, head *models.IndexableBlockNumber, store *strpkg.Store) (JobSubscription, error) {
-	// Check each possible initiator type for matches, list the matches in
-	// initSubs, and subscribe the job to them. Record any errors during
-	// subscription in merr.
 	var merr error
 	var unsubscribers []Unsubscriber
 	unsubscribers, merr = scanInitiatorLogsStartSubscriptions(

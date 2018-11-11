@@ -214,7 +214,8 @@ func loggerLogListening(initr models.Initiator, blockNumber *big.Int) {
 	logger.Infow(msg)
 }
 
-// Parse the log and run the job specific to this initiator log event.
+// ReceiveRunLog parses the log and runs the job specific to this initiator log
+// event.
 func ReceiveRunLog(le InitiatorSubscriptionLogEvent) {
 	if !le.ValidateRunLog() {
 		return
@@ -230,7 +231,8 @@ func ReceiveRunLog(le InitiatorSubscriptionLogEvent) {
 	runJob(le, data, le.Initiator)
 }
 
-// Parse the log and run the job specific to this initiator log event.
+// ReceiveEthLog parses the log and runs the job specific to this initiator log
+// event.
 func ReceiveEthLog(le InitiatorSubscriptionLogEvent) {
 	le.ToDebug()
 	data, err := le.EthLogJSON()

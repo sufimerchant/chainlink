@@ -31,15 +31,11 @@ const (
 // RunLogTopic is the signature for the RunRequest(...) event
 // which Chainlink RunLog initiators watch for.
 // See https://github.com/smartcontractkit/chainlink/blob/master/solidity/contracts/Oracle.sol
-// If updating this, be sure to update the truffle suite's "expected event signature" test.
 var RunLogTopic = mustHash("RunRequest(bytes32,address,uint256,uint256,uint256,bytes)")
 
 // ServiceAgreementExecutionLogTopic is the signature for the
 // Coordinator.RunRequest(...) events which Chainlink nodes watch for. See
-
 // https://github.com/smartcontractkit/chainlink/blob/master/solidity/contracts/Coordinator.sol#RunRequest
-// If updating this, be sure to update the truffle suite's "expected event
-// signature" test.
 var ServiceAgreementExecutionLogTopic = mustHash("ServiceAgreementExecution(bytes32,address,uint256,uint256,uint256,bytes)")
 
 // OracleFulfillmentFunctionID is the function id of the oracle fulfillment

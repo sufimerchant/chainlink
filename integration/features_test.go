@@ -527,11 +527,13 @@ func TestIntegration_CreateServiceAgreement(t *testing.T) {
 	defer cleanup()
 
 	eth := app.MockEthClient()
-	logs := make(chan store.Log, 1) // Mock ethereum log events are sent via `logs`
+	logs := make(chan store.Log, 1)
 	eth.Context("app.Start()", func(eth *cltest.EthMock) {
 		eth.RegisterSubscription("logs", logs)
+		eth.Register("eth_getBlockByNumber", models.BlockHeader{}) // services.(*HeadTracker).fastForwardHeadFromEth
+		eth.Register("eth_getTransactionCount", `0x100`)
 	})
-	_ = app.Start()
+	assert.NoError(t, app.Start())
 	sa := cltest.FixtureCreateServiceAgreementViaWeb(t, app, "../internal/fixtures/web/noop_agreement.json")
 
 	assert.NotEqual(t, "", sa.ID)

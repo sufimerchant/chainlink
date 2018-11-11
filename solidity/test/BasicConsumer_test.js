@@ -23,7 +23,7 @@ contract('BasicConsumer', () => {
   let specId = newHash('0x4c7b7ffb66b344fbaa64995af81e355a')
   let currency = 'USD'
   let link, oc, cc
-  
+
   beforeEach(async () => {
     link = await deploy('LinkToken.sol')
     oc = await deploy('Oracle.sol', link.address)
@@ -35,6 +35,7 @@ contract('BasicConsumer', () => {
     const rec = await eth.getTransactionReceipt(cc.transactionHash)
     assert.isBelow(rec.gasUsed, 1700000)
   })
+
   describe('#requestEthereumPrice', () => {
     context('without LINK', () => {
       it('reverts', async () => {
@@ -43,7 +44,7 @@ contract('BasicConsumer', () => {
         })
       })
     })
-    
+
     context('with LINK', () => {
       beforeEach(async () => {
         await link.transfer(cc.address, web3.toWei('1', 'ether'))
@@ -151,7 +152,7 @@ contract('BasicConsumer', () => {
 
     context("after 5 minutes", () => {
       it('can cancel the request', async () => {
-        await increaseTime5Minutes()
+        await increaseTime5Minutes();
         await cc.cancelRequest(requestId, {from: consumer})
       })
     })
@@ -160,16 +161,16 @@ contract('BasicConsumer', () => {
   describe('#withdrawLink', () => {
     beforeEach(async () => {
       await link.transfer(cc.address, web3.toWei('1', 'ether'))
-      const balance = await link.balanceOf(cc.address)
-      assert.equal(balance.toString(), web3.toWei('1', 'ether'))
+      const balance = await link.balanceOf(cc.address);
+      assert.equal(balance.toString(), web3.toWei('1', 'ether'));
     })
 
     it('transfers LINK out of the contract', async () => {
-      await cc.withdrawLink({from: consumer})
-      const ccBalance = await link.balanceOf(cc.address)
-      const consumerBalance = await link.balanceOf(consumer)
-      assert.equal(ccBalance.toString(), '0')
-      assert.equal(consumerBalance.toString(), web3.toWei('1', 'ether'))
+      await cc.withdrawLink({from: consumer});
+      const ccBalance = await link.balanceOf(cc.address);
+      const consumerBalance = await link.balanceOf(consumer);
+      assert.equal(ccBalance.toString(), '0');
+      assert.equal(consumerBalance.toString(), web3.toWei('1', 'ether'));
     })
   })
 })

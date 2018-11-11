@@ -444,11 +444,8 @@ func TestIntegration_WeiWatchers(t *testing.T) {
 
 func TestIntegration_MultiplierInt256(t *testing.T) {
 	app, cleanup := cltest.NewApplication()
-	eth := app.MockEthClient()
-	eth.Context("app.Start()", func(eth *cltest.EthMock) {
-	})
 	defer cleanup()
-	_ = app.Start()
+	app.Start()
 
 	j := cltest.FixtureCreateJobViaWeb(t, app, "../internal/fixtures/web/int256_job.json")
 	jr := cltest.CreateJobRunViaWeb(t, app, j, `{"value":"-10221.30"}`)

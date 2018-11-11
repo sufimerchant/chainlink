@@ -276,22 +276,23 @@ func NewRunLog(
 }
 
 // NewServiceAgreementExecutionEvent creates a log event for the given jobid,
-// address, block, and json
+// address, block, and json, to simulate a request for execution on a service
+// agreement.
 func NewServiceAgreementExecutionEvent(
 	jobID string,
-	emitter common.Address,
-	requester common.Address,
-	blk int,
-	json string,
+	logEmitter common.Address,
+	executionRequester common.Address,
+	blockHeight int,
+	serviceAgreementJSON string,
 ) strpkg.Log {
 	return strpkg.Log{
-		Address:     emitter,
-		BlockNumber: uint64(blk),
-		Data:        StringToVersionedLogData("internalID", json),
+		Address:     logEmitter,
+		BlockNumber: uint64(blockHeight),
+		Data:        StringToVersionedLogData("internalID", serviceAgreementJSON),
 		Topics: []common.Hash{
 			services.ServiceAgreementExecutionLogTopic,
 			StringToHash(jobID),
-			requester.Hash(),
+			executionRequester.Hash(),
 			minimumContractPayment.ToHash(),
 		},
 	}

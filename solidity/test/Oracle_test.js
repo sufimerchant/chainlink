@@ -407,7 +407,7 @@ contract('Oracle', () => {
 
     context('with a pending request', () => {
       let internalId, tx, mock, requestAmount, startingBalance
-      assert(mock === null) // Silence linter
+      assert(mock === undefined, 'silence linter')
       let requestId = 'requestId'
       beforeEach(async () => {
         startingBalance = 100

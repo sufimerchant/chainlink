@@ -202,10 +202,7 @@ contract Coordinator {
   {
     Callback memory callback = callbacks[_internalId];
 
-    // This is ensuring that ONLY THE FIRST oracle response will be processed
-    // properly, which we are assuming for now, for prototyping. Also, there is
-    // NO HANDLING of LINK transfers or bond recalculations, ATM. TODO: Leaving
-    // that to another story, i.e.
+    // TODO: Handle multiple responses, and compensation / fines.
     // https://www.pivotaltracker.com/story/show/159584617
     delete callbacks[_internalId];
 

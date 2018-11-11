@@ -123,16 +123,6 @@ contract Chainlinked {
     return _run.requestId;
   }
 
-  //function fulfillServiceAgreement(bytes32 _requestId, uint256 _value)
-    //public
-    //checkChainlinkFulfillment(_requestId)
-  //{
-    //emit RequestFulfilled(_requestId, _value);
-    //totals[_requestId] += _value;
-    //sampleSize[_requestId] += 1;
-  //}
-
-
   modifier checkChainlinkFulfillment(bytes32 _requestId) {
     require(msg.sender == unfulfilledRequests[_requestId], "source must be the oracle of the request");
     _;

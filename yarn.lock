@@ -13442,10 +13442,9 @@ solc@^0.4.11, solc@^0.4.20, solc@^0.4.24:
     semver "^5.3.0"
     yargs "^4.7.1"
 
-solidity-cborutils@^1.0.0:
+"solidity-cborutils@github:smartcontractkit/solidity-cborutils":
   version "1.0.0"
-  resolved "https://registry.yarnpkg.com/solidity-cborutils/-/solidity-cborutils-1.0.0.tgz#5dc9a483448286d7bb939ac59b6aa7007293e2ac"
-  integrity sha512-PYeIzYIcdsiM1cDxuBwvzROV65oXqZELB6cRIt9CX+2otV0/0WlZHfWTNtI5qlrTsNNd2KZiBt3lCEJU6LKoLw==
+  resolved "https://codeload.github.com/smartcontractkit/solidity-cborutils/tar.gz/7c5e4491f1f59aea65582728bf8d9ae0df6e366d"
   dependencies:
     cbor ">=4.0.0"
 

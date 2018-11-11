@@ -26,4 +26,3 @@ credentials.env
 gcr_creds.env
 
 coverage/
-/.git-together

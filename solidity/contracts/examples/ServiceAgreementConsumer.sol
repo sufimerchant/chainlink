@@ -2,10 +2,6 @@ pragma solidity ^0.4.24;
 
 import "../Chainlinked.sol";
 
-// This contract is to be subclassed by consumers of `ServiceAgreement`s.
-// Currently, all it does is provide a pass-through interface to
-// Coordinator.executeServiceAgreement, which we may have to reference directly
-// in the consumer contract. So we might want to get rid of this.
 contract ServiceAgreementConsumer is Chainlinked {
   // NB: `Chainlinked` covers both the single-Oracle and Service-Agreement
   // frameworks. Some of the terminology there is in terms of a single Oracle.
@@ -36,10 +32,7 @@ contract ServiceAgreementConsumer is Chainlinked {
     public
     checkChainlinkFulfillment(_requestId)
   {
-    // TODO: This is a bad example for a ServiceAgreement, because it assumes a
-    // single Oracle. Somewhere, there needs to be storage and aggregation of
-    // each Oracle's response. It's not clear where that should happen. Maybe in
-    // Coordinator#fulfillData?
+    // TODO: Example which deals with multiple responses. (Here, or in Coordinator?)
     emit RequestFulfilled(_requestId, _price);
     currentPrice = _price;
   }
